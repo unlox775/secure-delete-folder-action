@@ -12,3 +12,38 @@ Really basic, using Mac drop folder action and Applescript, to make a drop folde
    - Enable Folder actions (checkbox)
    - The `secure-delete.scpt` you installed should show up as an option on the right side.  Choose that
    - Hit the "+" icon, to add your new folder and link it to the script
+
+## What this does
+
+Secure delete overwrites your file multiple times before removing it. This is important as normal deletion of a file doesn't actually erase anything, it only removes the link that the file system stores noting that the file named X is linked to disk blocks Y, Z and Q. If someone were to just go read blocks Y, Z, and Q after you remove the link they can still read your file just fine.
+
+##  AppleScript Source:
+
+``` applescript
+on adding folder items to this_folder after receiving these_items
+	try
+		tell application "Finder"
+			repeat with i from 1 to number of items in these_items
+				try
+					set this_item to item i of these_items
+					set the path_string to this_item as string
+					set the final_path to POSIX path of the path_string
+					do shell script "/bin/rm -rfP '" & final_path & "'"
+				on error error_message
+					tell application "Finder"
+						display dialog "Error for item " & (this_item as string) ¬
+							& ": " & error_message buttons {"Continue", "Cancel"} ¬
+							default button 1 giving up after 120
+					end tell
+				end try
+			end repeat
+		end tell
+	on error error_message
+		tell application "Finder"
+			display dialog error_message buttons {"Cancel"} ¬
+				default button 1 giving up after 120
+		end tell
+	end try
+end adding folder items to
+```
+
